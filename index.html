@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeoVideo AI — AI Video Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0a0f;--bg2:#111118;--bg3:#16161f;
+  --border:#ffffff12;--border2:#ffffff20;
+  --text:#f0f0f8;--text2:#9090aa;--text3:#5a5a72;
+  --accent:#7c6af7;--accent2:#5b4fd4;
+  --cyan:#4fd4c8;--green:#4fd47e;--red:#f74f4f;
+  --r8:8px;--r12:12px;--r16:16px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+h1,h2,h3,h4,h5{font-family:'Syne',sans-serif}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+
+.app{display:grid;grid-template-rows:60px 1fr;height:100vh}
+.header{display:flex;align-items:center;justify-content:space-between;padding:0 24px;border-bottom:1px solid var(--border);background:var(--bg)}
+.logo{display:flex;align-items:center;gap:10px;font-family:'Syne',sans-serif;font-weight:700;font-size:18px}
+.logo-dot{width:28px;height:28px;background:linear-gradient(135deg,var(--accent),var(--cyan));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff}
+.badge-ok{background:#4fd47e18;border:1px solid #4fd47e40;color:var(--green);padding:4px 12px;border-radius:20px;font-size:12px;font-weight:500}
+.main{display:grid;grid-template-columns:268px 1fr 316px;overflow:hidden}
+
+.sidebar{border-right:1px solid var(--border);padding:20px 14px;overflow-y:auto;display:flex;flex-direction:column;gap:14px}
+.panel-title{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
+.section{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r12);padding:14px}
+.form-group{margin-bottom:10px}.form-group:last-child{margin-bottom:0}
+label{font-size:12px;color:var(--text2);display:block;margin-bottom:5px}
+select,input[type=text]{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r8);padding:7px 11px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border .2s}
+select:focus,input[type=text]:focus{border-color:var(--accent)}
+select option{background:var(--bg3)}
+.range-row{display:flex;align-items:center;gap:8px}
+input[type=range]{-webkit-appearance:none;flex:1;height:4px;background:var(--border2);border-radius:4px;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;background:var(--accent);border-radius:50%;cursor:pointer}
+.range-val{font-size:11px;color:var(--text3);min-width:28px;text-align:right}
+.ratio-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ratio-btn{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r8);padding:10px 6px;cursor:pointer;color:var(--text2);font-size:11px;text-align:center;transition:all .2s;font-family:'DM Sans',sans-serif;line-height:1.4}
+.ratio-btn.active,.ratio-btn:hover{border-color:var(--accent);color:var(--accent);background:#7c6af712}
+.ratio-icon{display:block;width:22px;height:14px;border:2px solid currentColor;border-radius:2px;margin:0 auto 5px}
+.ratio-icon.p{width:14px;height:22px}
+
+.center{display:flex;flex-direction:column;overflow:hidden;padding:18px}
+.preview-area{flex:1;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
+.preview-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r16);overflow:hidden;flex-shrink:0}
+.preview-top{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border)}
+.preview-top span{font-size:13px;color:var(--text2)}
+.ratio-tag{background:#7c6af718;border:1px solid var(--accent)40;color:var(--accent);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.viewport-wrap{position:relative;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.viewport-wrap.landscape{padding-top:56.25%}
+.viewport-wrap.portrait{width:42%;margin:0 auto;padding-top:74.6%}
+#bg-canvas{position:absolute;top:0;left:0;width:100%;height:100%}
+.subtitle-box{position:absolute;bottom:9%;left:50%;transform:translateX(-50%);width:86%;text-align:center;z-index:10;pointer-events:none}
+.subtitle-text{display:inline-block;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1);border-radius:var(--r8);padding:9px 18px;font-size:clamp(11px,1.8vw,15px);line-height:1.55;color:#fff;font-family:'DM Sans',sans-serif}
+.subtitle-text.empty{color:var(--text3);font-style:italic}
+.loader-overlay{position:absolute;inset:0;background:rgba(10,10,15,.88);display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:20}
+.loader-overlay.show{display:flex}
+.spinner{width:34px;height:34px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader-text{font-size:13px;color:var(--text2)}
+.video-controls{display:flex;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid var(--border)}
+.ctrl-btn{background:none;border:none;cursor:pointer;color:var(--text2);display:flex;align-items:center;justify-content:center;padding:6px;border-radius:6px;transition:color .2s}
+.ctrl-btn:hover{color:var(--text)}.ctrl-btn:disabled{opacity:.3;cursor:not-allowed}
+.progress-wrap{flex:1;display:flex;align-items:center;gap:8px}
+.time{font-size:11px;color:var(--text3);min-width:34px}
+.prog-bar-bg{flex:1;height:4px;background:var(--border2);border-radius:4px;position:relative;cursor:pointer}
+.prog-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--cyan));border-radius:4px;width:0%;transition:width .1s}
+
+.timeline-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r12);padding:14px;flex-shrink:0}
+.tl-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.tl-head span{font-size:13px;color:var(--text2)}.tl-count{font-size:12px;color:var(--text3)}
+.tl-tracks{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;min-height:50px;align-items:center}
+.tl-empty{color:var(--text3);font-size:12px;font-style:italic}
+.tl-block{flex-shrink:0;height:42px;min-width:76px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r8);display:flex;align-items:center;justify-content:center;padding:0 8px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
+.tl-block:hover{border-color:var(--accent)}.tl-block.active{border-color:var(--accent);background:#7c6af714}
+.tl-block::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--accent);opacity:0;transition:opacity .2s}
+.tl-block.active::after{opacity:1}
+.tl-label{font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px}
+
+.editor{border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.editor-top{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.editor-top span{font-family:'Syne',sans-serif;font-size:14px;font-weight:700}
+.chat-area{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.chat-msg{display:flex;gap:8px;align-items:flex-start}
+.chat-msg.user{flex-direction:row-reverse}
+.msg-avatar{width:26px;height:26px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:'Syne',sans-serif}
+.ai .msg-avatar{background:linear-gradient(135deg,var(--accent),var(--cyan));color:#fff}
+.user .msg-avatar{background:var(--bg3);border:1px solid var(--border2);color:var(--text2)}
+.msg-bubble{max-width:86%;padding:9px 13px;border-radius:var(--r12);font-size:13px;line-height:1.58}
+.ai .msg-bubble{background:var(--bg3);border:1px solid var(--border);color:var(--text);border-top-left-radius:3px}
+.user .msg-bubble{background:#7c6af71c;border:1px solid var(--accent)38;color:var(--text);border-top-right-radius:3px}
+.scene-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.scene-chip{background:#7c6af712;border:1px solid var(--accent)28;border-radius:5px;padding:3px 9px;font-size:11px;color:var(--accent);cursor:pointer;transition:all .2s}
+.scene-chip:hover{background:#7c6af724}
+.scenes-edit{background:var(--bg2);border-top:1px solid var(--border);padding:10px 14px;max-height:190px;overflow-y:auto}
+.scenes-edit-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.scenes-edit-head span{font-size:12px;color:var(--text2)}
+.scene-edit-item{margin-bottom:7px;display:flex;gap:5px;align-items:flex-start}
+.scene-num{font-size:11px;color:var(--text3);min-width:18px;padding-top:8px}
+.scene-edit-input{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r8);padding:6px 9px;color:var(--text);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;resize:none;min-height:48px;line-height:1.5;transition:border .2s}
+.scene-edit-input:focus{border-color:var(--accent)}
+.input-area{padding:12px 14px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:7px}
+.input-hint{font-size:11px;color:var(--text3)}
+.input-wrap{display:flex;gap:8px;align-items:flex-end}
+textarea{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r12);padding:9px 13px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;resize:none;min-height:76px;max-height:150px;line-height:1.5;transition:border .2s}
+textarea:focus{border-color:var(--accent)}
+textarea::placeholder{color:var(--text3)}
+.btn-send{background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:var(--r8);width:38px;height:38px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;transition:opacity .2s;flex-shrink:0}
+.btn-send:hover{opacity:.84}.btn-send:disabled{opacity:.38;cursor:not-allowed}
+.btn{padding:7px 14px;border-radius:var(--r8);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:5px;border:none}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
+.btn-primary:hover{opacity:.85}
+.btn-secondary{background:var(--bg3);border:1px solid var(--border2);color:var(--text2)}
+.btn-secondary:hover{border-color:var(--accent);color:var(--text)}
+.btn-sm{padding:4px 10px;font-size:12px}.btn:disabled{opacity:.4;cursor:not-allowed}
+.status-row{display:flex;align-items:center;gap:6px}
+.pulse{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="logo">
+      <div class="logo-dot">▶</div>
+      NeoVideo <span style="color:var(--accent)">AI</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:12px;color:var(--text3)">Loyiha:</span>
+      <input type="text" id="project-name" value="Mening videom" style="width:175px;font-size:13px">
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="status-row">
+        <div class="pulse"></div>
+        <span style="font-size:12px;color:var(--text2)">Claude AI tayyor</span>
+      </div>
+      <div class="badge-ok">✓ Ishlamoqda</div>
+      <button class="btn btn-primary btn-sm" onclick="startExport()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Eksport
+      </button>
+    </div>
+  </header>
+
+  <div class="main">
+    <aside class="sidebar">
+      <div>
+        <div class="panel-title">Format</div>
+        <div class="section">
+          <div class="form-group">
+            <label>Video o'lchami</label>
+            <div class="ratio-btns">
+              <button class="ratio-btn active" onclick="setRatio(this,'landscape')">
+                <span class="ratio-icon landscape"></span>16:9 Keng
+              </button>
+              <button class="ratio-btn" onclick="setRatio(this,'portrait')">
+                <span class="ratio-icon p"></span>9:16 Shorts
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="panel-title">Ovoz sozlamalari</div>
+        <div class="section">
+          <div class="form-group">
+            <label>Ovoz tanlash</label>
+            <select id="voice-select" onchange="updateVoice()"><option>Yuklanmoqda...</option></select>
+          </div>
+          <div class="form-group">
+            <label>Tezlik <span class="range-val" id="rate-val">0.95</span></label>
+            <div class="range-row">
+              <span style="font-size:10px;color:var(--text3)">Sekin</span>
+              <input type="range" id="voice-rate" min="0.6" max="1.4" step="0.05" value="0.95" oninput="document.getElementById('rate-val').textContent=parseFloat(this.value).toFixed(2)">
+              <span style="font-size:10px;color:var(--text3)">Tez</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Balandlik <span class="range-val" id="pitch-val">1.0</span></label>
+            <div class="range-row">
+              <span style="font-size:10px;color:var(--text3)">Past</span>
+              <input type="range" id="voice-pitch" min="0.5" max="1.5" step="0.1" value="1" oninput="document.getElementById('pitch-val').textContent=parseFloat(this.value).toFixed(1)">
+              <span style="font-size:10px;color:var(--text3)">Baland</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="panel-title">Animatsiya</div>
+        <div class="section">
+          <div class="form-group">
+            <label>Rang sxemasi</label>
+            <select id="theme-select" onchange="updateTheme()">
+              <option value="cosmic">Kosmik (Binafsha)</option>
+              <option value="ocean">Okean (Ko'k)</option>
+              <option value="forest">O'rmon (Yashil)</option>
+              <option value="fire">Olov (Qizil)</option>
+              <option value="minimal">Minimal (Qora)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Zarralar <span class="range-val" id="part-val">40</span></label>
+            <input type="range" id="part-count" min="10" max="80" step="5" value="40" oninput="document.getElementById('part-val').textContent=this.value;reinitParticles()">
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="panel-title">Texnologiyalar</div>
+        <div class="section" style="font-size:12px;color:var(--text3);line-height:1.8">
+          <div>🤖 <strong style="color:var(--text2)">Claude Sonnet 4</strong></div>
+          <div>🎙 <strong style="color:var(--text2)">Web Speech API</strong></div>
+          <div>🎨 <strong style="color:var(--text2)">Canvas API</strong></div>
+          <div style="margin-top:6px;font-size:11px">100% brauzerde ishlaydi</div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="center">
+      <div class="preview-area">
+        <div class="preview-card">
+          <div class="preview-top">
+            <span>Video Preview</span>
+            <div class="ratio-tag" id="ratio-tag">16:9 Landscape</div>
+          </div>
+          <div class="viewport-wrap landscape" id="viewport-wrap">
+            <canvas id="bg-canvas"></canvas>
+            <div class="subtitle-box">
+              <div class="subtitle-text empty" id="subtitle-text">Prompt yozing va yuborish tugmasini bosing...</div>
+            </div>
+            <div class="loader-overlay" id="loader-overlay">
+              <div class="spinner"></div>
+              <div class="loader-text" id="loader-text">Claude AI o'ylayapti...</div>
+            </div>
+          </div>
+          <div class="video-controls">
+            <button class="ctrl-btn" id="btn-play" onclick="togglePlay()" disabled>
+              <svg id="play-ico" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <svg id="pause-ico" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+            </button>
+            <button class="ctrl-btn" onclick="stopPlayback()" title="To'xtatish">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+            </button>
+            <div class="progress-wrap">
+              <span class="time" id="cur-time">00:00</span>
+              <div class="prog-bar-bg" id="prog-bg" onclick="seekTo(event)"><div class="prog-bar-fill" id="prog-fill"></div></div>
+              <span class="time" id="tot-time">00:00</span>
+            </div>
+          </div>
+        </div>
+        <div class="timeline-card">
+          <div class="tl-head"><span>Sahnalar ketma-ketligi</span><span class="tl-count" id="tl-count">0 sahna</span></div>
+          <div class="tl-tracks" id="tl-tracks"><span class="tl-empty">Hali sahnalar yo'q</span></div>
+        </div>
+      </div>
+    </main>
+
+    <section class="editor">
+      <div class="editor-top">
+        <span>AI Chat</span>
+        <button class="btn btn-secondary btn-sm" onclick="clearChat()">Tozalash</button>
+      </div>
+      <div class="chat-area" id="chat-area"></div>
+      <div class="scenes-edit" id="scenes-edit" style="display:none">
+        <div class="scenes-edit-head">
+          <span>Sahnalarni tahrirlash</span>
+          <button class="btn btn-secondary btn-sm" onclick="applyChanges()">Saqlash</button>
+        </div>
+        <div id="scenes-inputs"></div>
+      </div>
+      <div class="input-area">
+        <div class="input-hint">💡 Enter = yuborish &nbsp;|&nbsp; Shift+Enter = yangi qator</div>
+        <div class="input-wrap">
+          <textarea id="prompt-input" placeholder="Video mavzusini yozing... Masalan: 'Tadbirkorlik haqida motivatsion video, 4 sahna'" onkeydown="handleKey(event)"></textarea>
+          <button class="btn-send" id="btn-send" onclick="sendPrompt()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+const S = {
+  scenes:[],cur:0,playing:false,voices:[],selVoice:null,
+  ratio:'landscape',theme:'cosmic',
+  synth:window.speechSynthesis,
+  chatHistory:[],totalDur:0,
+  canvas:null,ctx:null,particles:[],animId:null,
+};
+
+const THEMES = {
+  cosmic:{colors:['#7c6af7','#5b4fd4','#4fd4c8','#f74fa3'],bg:'#0a0a15'},
+  ocean: {colors:['#0ea5e9','#0284c7','#38bdf8','#67e8f9'],bg:'#020b18'},
+  forest:{colors:['#22c55e','#16a34a','#4ade80','#86efac'],bg:'#020d08'},
+  fire:  {colors:['#ef4444','#f97316','#eab308','#fbbf24'],bg:'#150402'},
+  minimal:{colors:['#ffffff','#888','#555','#333'],bg:'#000'},
+};
+
+// CANVAS
+function initCanvas(){
+  S.canvas=document.getElementById('bg-canvas');
+  S.ctx=S.canvas.getContext('2d');
+  resizeCanvas();reinitParticles();animLoop();
+  window.addEventListener('resize',()=>{resizeCanvas();reinitParticles();});
+}
+function resizeCanvas(){
+  const w=document.getElementById('viewport-wrap');
+  S.canvas.width=w.offsetWidth;S.canvas.height=w.offsetHeight;
+}
+function reinitParticles(){
+  const n=parseInt(document.getElementById('part-count').value);
+  const t=THEMES[S.theme];
+  S.particles=Array.from({length:n},()=>({
+    x:Math.random()*(S.canvas.width||640),
+    y:Math.random()*(S.canvas.height||360),
+    r:Math.random()*2.5+.8,
+    vx:(Math.random()-.5)*.45,vy:(Math.random()-.5)*.45,
+    color:t.colors[Math.floor(Math.random()*t.colors.length)],
+    a:Math.random()*.45+.1,ph:Math.random()*Math.PI*2,
+  }));
+}
+function updateTheme(){S.theme=document.getElementById('theme-select').value;reinitParticles();}
+function animLoop(){
+  const c=S.ctx,w=S.canvas.width,h=S.canvas.height,t=THEMES[S.theme];
+  c.fillStyle=t.bg+'d0';c.fillRect(0,0,w,h);
+  const g=c.createRadialGradient(w/2,h/2,0,w/2,h/2,w*.65);
+  g.addColorStop(0,t.colors[0]+'18');g.addColorStop(1,'transparent');
+  c.fillStyle=g;c.fillRect(0,0,w,h);
+  S.particles.forEach(p=>{
+    p.ph+=.018;p.x+=p.vx;p.y+=p.vy;
+    if(p.x<0)p.x=w;if(p.x>w)p.x=0;
+    if(p.y<0)p.y=h;if(p.y>h)p.y=0;
+    const a=p.a*(.7+.3*Math.sin(p.ph));
+    const hex=Math.floor(a*255).toString(16).padStart(2,'0');
+    c.beginPath();c.arc(p.x,p.y,p.r,0,Math.PI*2);
+    c.fillStyle=p.color+hex;c.fill();
+  });
+  for(let i=0;i<S.particles.length;i++)for(let j=i+1;j<S.particles.length;j++){
+    const dx=S.particles[i].x-S.particles[j].x,dy=S.particles[i].y-S.particles[j].y;
+    const d=Math.sqrt(dx*dx+dy*dy);
+    if(d<85){const op=Math.floor((1-d/85)*28).toString(16).padStart(2,'0');
+      c.beginPath();c.moveTo(S.particles[i].x,S.particles[i].y);
+      c.lineTo(S.particles[j].x,S.particles[j].y);
+      c.strokeStyle=t.colors[0]+op;c.lineWidth=.5;c.stroke();}
+  }
+  if(S.scenes.length&&S.cur<S.scenes.length){
+    const sc=S.scenes[S.cur];
+    const kw=(sc.keyword||sc.text.split(' ').slice(0,2).join(' ')).toUpperCase();
+    c.font=`700 ${Math.min(w*.09,56)}px 'Syne',sans-serif`;
+    c.textAlign='center';c.fillStyle=t.colors[0]+'0d';
+    c.fillText(kw,w/2,h/2-16);
+  }
+  S.animId=requestAnimationFrame(animLoop);
+}
+
+// VOICES
+function loadVoices(){
+  const go=()=>{
+    const vs=S.synth.getVoices();S.voices=vs;
+    const sel=document.getElementById('voice-select');sel.innerHTML='';
+    const uz=vs.filter(v=>v.lang.startsWith('uz'));
+    const ru=vs.filter(v=>v.lang.startsWith('ru'));
+    const en=vs.filter(v=>v.lang.startsWith('en'));
+    const rest=vs.filter(v=>!['uz','ru','en'].some(l=>v.lang.startsWith(l)));
+    const all=[...uz,...ru,...en,...rest];
+    if(!all.length){sel.innerHTML='<option>Ovoz topilmadi</option>';return;}
+    all.forEach((v,i)=>{const o=document.createElement('option');o.value=i;o.textContent=`${v.name} (${v.lang})`;sel.appendChild(o);});
+    S.selVoice=all[0];
+  };
+  go();S.synth.onvoiceschanged=go;
+}
+function updateVoice(){const i=parseInt(document.getElementById('voice-select').value);S.selVoice=S.voices[i];}
+
+// CLAUDE API
+async function callClaude(msgs,sys){
+  const r=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:sys||'',messages:msgs})
+  });
+  const d=await r.json();
+  if(d.error)throw new Error(d.error.message);
+  return d.content.map(b=>b.text||'').join('');
+}
+
+async function genScript(prompt){
+  const sys=`Sen o'zbek tilidagi professional video ssenary yozuvchisan.
+Foydalanuvchi video mavzusini beradi. 3-6 ta sahna bo'lgan ssenary yoz.
+Har bir sahna 15-30 so'z — ovoz bilan o'qiladi. Jonli, qiziqarli, o'zbek tilida yoz.
+FAQAT JSON qaytarasan, boshqa hech narsa yo'q, backtick ham yo'q:
+{"title":"Video nomi","scenes":[{"id":1,"text":"Sahna matni...","duration":5,"keyword":"KALIT"},{"id":2,"text":"...","duration":5,"keyword":"..."}]}`;
+  const msgs=[...S.chatHistory.slice(-4),{role:'user',content:prompt}];
+  const raw=await callClaude(msgs,sys);
+  const s=raw.indexOf('{'),e=raw.lastIndexOf('}');
+  return JSON.parse(raw.slice(s,e+1));
+}
+
+// SEND
+async function sendPrompt(){
+  const inp=document.getElementById('prompt-input');
+  const txt=inp.value.trim();if(!txt)return;
+  inp.value='';
+  document.getElementById('btn-send').disabled=true;
+  addMsg('user',txt);
+  S.chatHistory.push({role:'user',content:txt});
+  showLoader('Claude AI ssenary yozmoqda...');
+  try{
+    const res=await genScript(txt);
+    S.scenes=res.scenes||[];
+    const reply=`✅ Ssenary tayyor! "${res.title}" — ${S.scenes.length} ta sahna.\n\n▶ Ijro tugmasini bosib tomosha qiling!`;
+    addMsg('ai',reply,S.scenes.map((sc,i)=>`${i+1}. Sahna`));
+    S.chatHistory.push({role:'assistant',content:reply});
+    renderTimeline();renderScenesEdit();
+    if(S.scenes[0])updateSub(S.scenes[0].text,false);
+    document.getElementById('btn-play').disabled=false;
+    S.totalDur=S.scenes.reduce((a,sc)=>a+(sc.duration||5),0);
+    updTime(0,S.totalDur);
+  }catch(e){addMsg('ai',`⚠️ Xatolik: ${e.message}\n\nQaytadan urinib ko'ring.`);}
+  hideLoader();
+  document.getElementById('btn-send').disabled=false;
+}
+function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendPrompt();}}
+
+// CHAT UI
+function addMsg(role,text,chips){
+  const a=document.getElementById('chat-area');
+  const d=document.createElement('div');d.className=`chat-msg ${role}`;
+  const ch=chips?`<div class="scene-chips">${chips.map((c,i)=>`<span class="scene-chip" onclick="jumpToScene(${i})">${c}</span>`).join('')}</div>`:'';
+  d.innerHTML=`<div class="msg-avatar">${role==='ai'?'N':'S'}</div><div class="msg-bubble">${text.replace(/\n/g,'<br>')}${ch}</div>`;
+  a.appendChild(d);a.scrollTop=a.scrollHeight;
+}
+function clearChat(){
+  document.getElementById('chat-area').innerHTML='';
+  S.chatHistory=[];S.scenes=[];stopPlayback();
+  renderTimeline();document.getElementById('scenes-edit').style.display='none';
+  updateSub('Prompt yozing va yuborish tugmasini bosing...',true);
+  document.getElementById('btn-play').disabled=true;
+  addMsg('ai','Chat tozalandi. Yangi video yaratishga tayyorman! 🎬');
+}
+
+// TIMELINE
+function renderTimeline(){
+  const tr=document.getElementById('tl-tracks');
+  document.getElementById('tl-count').textContent=`${S.scenes.length} sahna`;
+  if(!S.scenes.length){tr.innerHTML='<span class="tl-empty">Hali sahnalar yo\'q</span>';return;}
+  tr.innerHTML=S.scenes.map((sc,i)=>`<div class="tl-block${i===0?' active':''}" id="tl-${i}" onclick="jumpToScene(${i})" title="${sc.text}"><span class="tl-label">${i+1}. ${sc.keyword||sc.text.split(' ').slice(0,2).join(' ')}</span></div>`).join('');
+}
+function renderScenesEdit(){
+  const ed=document.getElementById('scenes-edit'),inp=document.getElementById('scenes-inputs');
+  if(!S.scenes.length){ed.style.display='none';return;}
+  ed.style.display='block';
+  inp.innerHTML=S.scenes.map((sc,i)=>`<div class="scene-edit-item"><span class="scene-num">${i+1}.</span><textarea class="scene-edit-input" id="se-${i}">${sc.text}</textarea></div>`).join('');
+}
+function applyChanges(){
+  S.scenes.forEach((sc,i)=>{const el=document.getElementById(`se-${i}`);if(el)sc.text=el.value;});
+  addMsg('ai','✅ O\'zgarishlar saqlandi! Qaytadan ijro eting.');renderTimeline();
+}
+
+// PLAYBACK
+async function togglePlay(){S.playing?pausePlayback():await startPlayback();}
+async function startPlayback(){
+  if(!S.scenes.length)return;
+  S.playing=true;
+  document.getElementById('play-ico').style.display='none';
+  document.getElementById('pause-ico').style.display='';
+  for(let i=S.cur;i<S.scenes.length;i++){if(!S.playing)break;await playScene(i);}
+  if(S.playing)stopPlayback();
+}
+function pausePlayback(){
+  S.playing=false;S.synth.pause();
+  document.getElementById('play-ico').style.display='';
+  document.getElementById('pause-ico').style.display='none';
+}
+function stopPlayback(){
+  S.playing=false;S.cur=0;S.synth.cancel();
+  document.getElementById('play-ico').style.display='';
+  document.getElementById('pause-ico').style.display='none';
+  if(S.scenes.length){updateSub(S.scenes[0].text,false);hlScene(0);}
+  updProg(0);updTime(0,S.totalDur);
+}
+function playScene(idx){
+  return new Promise(resolve=>{
+    if(!S.playing){resolve();return;}
+    S.cur=idx;
+    const sc=S.scenes[idx];hlScene(idx);updateSub(sc.text,false);
+    const el=document.getElementById(`tl-${idx}`);
+    if(el)el.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+    const elapsed=S.scenes.slice(0,idx).reduce((a,s)=>a+(s.duration||5),0);
+    let done=false;
+    if(S.synth&&sc.text){
+      const u=new SpeechSynthesisUtterance(sc.text);
+      if(S.selVoice)u.voice=S.selVoice;
+      u.rate=parseFloat(document.getElementById('voice-rate').value);
+      u.pitch=parseFloat(document.getElementById('voice-pitch').value);
+      u.onend=()=>{done=true;resolve();};u.onerror=()=>resolve();
+      S.synth.speak(u);
+    }
+    const dur=sc.duration||5;let t=0;
+    const tick=setInterval(()=>{
+      if(!S.playing){clearInterval(tick);resolve();return;}
+      t+=.1;
+      updProg((elapsed+t)/S.totalDur);updTime(elapsed+t,S.totalDur);
+      if(t>=dur&&!S.synth.speaking){clearInterval(tick);if(!done)resolve();}
+    },100);
+  });
+}
+function jumpToScene(idx){
+  stopPlayback();S.cur=idx;
+  const sc=S.scenes[idx];
+  if(sc){updateSub(sc.text,false);hlScene(idx);
+    const e=S.scenes.slice(0,idx).reduce((a,s)=>a+(s.duration||5),0);
+    updTime(e,S.totalDur);updProg(e/S.totalDur);}
+  document.getElementById('btn-play').disabled=false;
+}
+function hlScene(idx){document.querySelectorAll('.tl-block').forEach((el,i)=>el.classList.toggle('active',i===idx));}
+function updateSub(txt,empty){
+  const el=document.getElementById('subtitle-text');
+  el.textContent=txt;el.className='subtitle-text'+(empty?' empty':'');
+}
+function updProg(r){document.getElementById('prog-fill').style.width=(Math.min(r,1)*100)+'%';}
+function updTime(cur,tot){
+  const f=s=>{const m=Math.floor(s/60),sec=Math.floor(s%60);return`${m.toString().padStart(2,'0')}:${sec.toString().padStart(2,'0')}`;};
+  document.getElementById('cur-time').textContent=f(cur);
+  document.getElementById('tot-time').textContent=f(tot);
+}
+function seekTo(e){
+  const bg=document.getElementById('prog-bg');
+  const r=e.offsetX/bg.offsetWidth;
+  const tgt=r*S.totalDur;let acc=0,tsc=0;
+  for(let i=0;i<S.scenes.length;i++){acc+=S.scenes[i].duration||5;if(tgt<=acc){tsc=i;break;}}
+  jumpToScene(tsc);
+}
+
+// EXPORT
+function startExport(){
+  if(!S.scenes.length){addMsg('ai','⚠️ Avval ssenary yarating!');return;}
+  const title=document.getElementById('project-name').value;
+  const txt=`${title}\n${'='.repeat(title.length)}\n\n`+S.scenes.map((sc,i)=>`Sahna ${i+1} (${sc.duration||5}s):\n${sc.text}`).join('\n\n');
+  const blob=new Blob([txt],{type:'text/plain;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`${title}.txt`;a.click();
+  URL.revokeObjectURL(url);
+  addMsg('ai',`✅ Ssenary saqlandi: "${title}.txt"\n\nEslatma: To'liq MP4 eksport uchun professional video dasturlari talab qilinadi.`);
+}
+
+// RATIO
+function setRatio(btn,ratio){
+  document.querySelectorAll('.ratio-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');S.ratio=ratio;
+  const w=document.getElementById('viewport-wrap');
+  w.className=`viewport-wrap ${ratio}`;
+  document.getElementById('ratio-tag').textContent=ratio==='landscape'?'16:9 Landscape':'9:16 Portrait';
+  setTimeout(()=>{resizeCanvas();reinitParticles();},120);
+}
+function showLoader(t){document.getElementById('loader-text').textContent=t||'Yuklanmoqda...';document.getElementById('loader-overlay').classList.add('show');}
+function hideLoader(){document.getElementById('loader-overlay').classList.remove('show');}
+
+// INIT
+window.addEventListener('load',()=>{
+  initCanvas();loadVoices();
+  addMsg('ai','Salom! Men NeoVideo AI yordamchisiman. 🎬\n\nQanday video yaratishni xohlaysiz? Mavzu, kahramon, uslub yozing — to\'liq ssenary yozib, ovoz bilan ijro etaman!\n\nMasalan: "Tadbirkorlik haqida motivatsion video, unda yosh yigit muvaffaqiyatga erishadi, 4 sahna"');
+});
+</script>
+</body>
+</html>
